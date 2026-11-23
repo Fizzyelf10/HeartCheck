@@ -1,0 +1,125 @@
+{
+  "version": "2.0",
+  "trainedAt": "2026-11-23T09:42:39+00:00",
+  "algorithm": "RandomForest",
+  "hyperparameters": {
+    "max_depth": 5,
+    "max_features": "sqrt",
+    "min_samples_leaf": 3
+  },
+  "dataset": {
+    "source": "UCI Cleveland Heart Disease",
+    "rows": 303,
+    "synthetic": false,
+    "diseaseRate": 0.4587
+  },
+  "cv": {
+    "LogisticRegression": {
+      "auc": 0.9038,
+      "std": 0.0161
+    },
+    "RandomForest": {
+      "auc": 0.9044,
+      "std": 0.0258
+    },
+    "GradientBoosting": {
+      "auc": 0.885,
+      "std": 0.0298
+    },
+    "SVM": {
+      "auc": 0.8992,
+      "std": 0.0215
+    }
+  },
+  "test": {
+    "auc": 0.9545,
+    "accuracy": 0.8525,
+    "precision": 0.8065,
+    "recall": 0.8929,
+    "f1": 0.8475,
+    "brier": 0.1023
+  },
+  "baseline": {
+    "age": 56.0,
+    "trestbps": 130.0,
+    "chol": 241.0,
+    "thalach": 153.0,
+    "oldpeak": 0.8,
+    "sex": 1.0,
+    "cp": 4.0,
+    "fbs": 0.0,
+    "restecg": 0.0,
+    "exang": 0.0,
+    "slope": 1.0,
+    "ca": 0.0,
+    "thal": 3.0
+  },
+  "featureImportance": [
+    {
+      "feature": "ca",
+      "label": "Blocked major vessels",
+      "importance": 0.0411
+    },
+    {
+      "feature": "cp",
+      "label": "Chest pain type",
+      "importance": 0.0392
+    },
+    {
+      "feature": "thal",
+      "label": "Thalassemia test",
+      "importance": 0.0211
+    },
+    {
+      "feature": "exang",
+      "label": "Exercise-induced angina",
+      "importance": 0.02
+    },
+    {
+      "feature": "oldpeak",
+      "label": "ST depression",
+      "importance": 0.0164
+    },
+    {
+      "feature": "slope",
+      "label": "ST slope",
+      "importance": 0.0091
+    },
+    {
+      "feature": "thalach",
+      "label": "Max heart rate",
+      "importance": 0.0086
+    },
+    {
+      "feature": "age",
+      "label": "Age",
+      "importance": 0.007
+    },
+    {
+      "feature": "restecg",
+      "label": "Resting ECG",
+      "importance": 0.0044
+    },
+    {
+      "feature": "trestbps",
+      "label": "Resting blood pressure",
+      "importance": 0.0021
+    },
+    {
+      "feature": "chol",
+      "label": "Cholesterol",
+      "importance": 0.001
+    },
+    {
+      "feature": "sex",
+      "label": "Sex",
+      "importance": 0.001
+    },
+    {
+      "feature": "fbs",
+      "label": "Fasting blood sugar > 120",
+      "importance": -0.001
+    }
+  ],
+  "sklearnVersion": "1.9.1"
+}

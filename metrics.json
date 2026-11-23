@@ -1,0 +1,12 @@
+{
+  "best_model": "RandomForest",
+  "cv_auc": {
+    "LogisticRegression": 0.9038157494679234,
+    "RandomForest": 0.9044165174599957,
+    "GradientBoosting": 0.8849858675945633,
+    "SVM": 0.899213427474297
+  },
+  "test_auc": 0.9545,
+  "n_rows": 303,
+  "synthetic": false
+}

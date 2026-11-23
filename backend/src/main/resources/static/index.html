@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HeartCheck – Heart Disease Risk Estimator</title>
+  <meta name="description" content="Estimate heart disease risk from blood pressure, cholesterol and other clinical values with a machine learning model (educational project).">
+  <meta name="theme-color" content="#e11d48">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23e11d48' d='M12 21s-7.5-4.7-9.6-9.3C.9 8.3 2.7 4.5 6.4 4.5c2.1 0 3.7 1.1 5.6 3.2 1.9-2.1 3.5-3.2 5.6-3.2 3.7 0 5.5 3.8 4 7.2C19.5 16.3 12 21 12 21z'/%3E%3C/svg%3E">
+  <script>
+    // Apply saved theme before first paint (avoids a flash of the wrong theme).
+    try { const t = localStorage.getItem("heartcheck.theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+  </script>
+  <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+  <a class="skip" href="#check">Skip to the risk check</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#top" aria-label="HeartCheck home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 21s-7.5-4.7-9.6-9.3C.9 8.3 2.7 4.5 6.4 4.5c2.1 0 3.7 1.1 5.6 3.2 1.9-2.1 3.5-3.2 5.6-3.2 3.7 0 5.5 3.8 4 7.2C19.5 16.3 12 21 12 21z"/></svg>
+        </span>
+        HeartCheck
+      </a>
+      <nav aria-label="Main">
+        <a href="#check">Risk check</a>
+        <a href="#how">How it works</a>
+        <a href="#model">The model</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg class="i-sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <div class="wrap hero-inner">
+        <div class="hero-text">
+          <p class="eyebrow"><span class="pulse" aria-hidden="true"></span> Machine-learning heart check</p>
+          <h1>Understand your heart&nbsp;risk in about <span class="accent">2&nbsp;minutes</span></h1>
+          <p class="lead">Enter blood pressure, cholesterol and a few other values. A model trained on real patient data estimates the probability of heart disease and explains what drove the result.</p>
+          <div class="hero-cta">
+            <a class="btn primary lg" href="#check">Start the check
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a class="btn ghost lg" href="#how">How it works</a>
+          </div>
+          <ul class="chips" aria-label="Highlights">
+            <li>✓ Only 5 values required</li>
+            <li>✓ Plain-language explanations</li>
+            <li>✓ Nothing stored on a server</li>
+          </ul>
+        </div>
+        <div class="hero-stats card" aria-label="Model statistics">
+          <div class="stat"><span class="stat-num" id="stat-auc">–</span><span class="stat-label">ROC-AUC on unseen patients</span></div>
+          <div class="stat"><span class="stat-num" id="stat-acc">–</span><span class="stat-label">accuracy on test set</span></div>
+          <div class="stat"><span class="stat-num" id="stat-rows">–</span><span class="stat-label">real patient records</span></div>
+          <div class="stat"><span class="stat-num" id="stat-algo">–</span><span class="stat-label">selected algorithm</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap"><div id="synthetic-warning" class="banner warn" role="alert" hidden>
+      ⚠️ The running model was trained on <strong>synthetic</strong> data, so its predictions are meaningless. Run <code>python train.py</code> with the real dataset.
+    </div></div>
+
+    <!-- ============ CHECK ============ -->
+    <section id="check" class="wrap check">
+      <form id="form" class="card form" novalidate>
+        <div class="form-head">
+          <div>
+            <h2>Your risk check</h2>
+            <p class="muted small-text">Fields marked <span class="req">*</span> are required. Everything else is optional.</p>
+          </div>
+          <div class="examples">
+            <label for="example" class="sr-only">Load an example patient</label>
+            <select id="example" class="select-sm">
+              <option value="">Try an example…</option>
+              <option value="low">Healthy 41-year-old</option>
+              <option value="high">High-risk 63-year-old</option>
+              <option value="minimal">Only the 5 basic values</option>
+            </select>
+          </div>
+        </div>
+
+        <ol class="stepper" id="stepper" aria-label="Progress"></ol>
+
+        <div id="steps"></div>
+
+        <div id="banner" class="banner error" role="alert" hidden></div>
+
+        <div class="nav-row">
+          <button type="button" class="btn ghost" id="back">← Back</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn ghost" id="skip" hidden>Skip optional tests</button>
+          <button type="button" class="btn primary" id="next">Next →</button>
+          <button type="submit" class="btn primary" id="submit" hidden>
+            <span class="btn-label">See my result</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </form>
+
+      <aside class="side">
+        <div class="card result" id="result" aria-live="polite" tabindex="-1">
+          <div class="result-head">
+            <h2>Result</h2>
+            <div class="result-actions" id="result-actions" hidden>
+              <button type="button" class="icon-btn" id="print" title="Print or save as PDF" aria-label="Print or save as PDF">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M6 14h12v7H6z"/></svg>
+              </button>
+              <button type="button" class="icon-btn" id="copy" title="Copy summary" aria-label="Copy summary">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="placeholder" id="placeholder">
+            <svg viewBox="0 0 120 60" width="140" aria-hidden="true"><path d="M0 30h30l8-18 10 36 10-30 7 12h55" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <p>Answer the questions on the left and press <strong>See my result</strong>. Your estimate and what drove it appear here.</p>
+          </div>
+
+          <div id="output" hidden>
+            <div class="gauge">
+              <svg viewBox="0 0 200 118" role="img" aria-labelledby="percent">
+                <defs>
+                  <linearGradient id="gauge-grad" x1="0" x2="1">
+                    <stop offset="0" stop-color="var(--low)"/>
+                    <stop offset=".5" stop-color="var(--medium)"/>
+                    <stop offset="1" stop-color="var(--high)"/>
+                  </linearGradient>
+                </defs>
+                <path class="track" d="M 14 108 A 86 86 0 0 1 186 108" pathLength="100"/>
+                <path class="zones" d="M 14 108 A 86 86 0 0 1 186 108" pathLength="100"/>
+                <path class="fill" id="gauge-fill" d="M 14 108 A 86 86 0 0 1 186 108" pathLength="100"/>
+                <g id="needle" class="needle"><line x1="100" y1="108" x2="100" y2="34"/><circle cx="100" cy="108" r="6"/></g>
+              </svg>
+              <div class="gauge-text">
+                <span id="percent">0%</span>
+                <small>estimated probability</small>
+              </div>
+            </div>
+            <div class="badge-row"><span class="badge" id="badge">LOW</span></div>
+            <p id="explain" class="explain"></p>
+
+            <div class="confidence" id="confidence">
+              <div class="confidence-top"><span>Data completeness</span><strong id="completeness-text">13 / 13</strong></div>
+              <div class="meter"><span id="completeness-bar"></span></div>
+              <p class="tiny muted" id="completeness-note"></p>
+            </div>
+
+            <h3 class="sub">What influenced this result</h3>
+            <p class="tiny muted">Compared with a typical patient in the training data. <span class="dot up"></span> raises risk · <span class="dot down"></span> lowers risk</p>
+            <ul class="factors" id="factors"></ul>
+
+            <h3 class="sub">Your numbers</h3>
+            <ul class="insights" id="insights"></ul>
+
+            <h3 class="sub">Suggested next steps</h3>
+            <ul class="tips" id="tips"></ul>
+
+            <p class="meta">Model v<span id="model-version">–</span> · <span id="result-time"></span></p>
+          </div>
+          <p class="disclaimer">Educational project. Not a medical device and not a diagnosis. Talk to a doctor about any health concern. In an emergency, call your local emergency number.</p>
+        </div>
+
+        <div class="card history" id="history-card" hidden>
+          <div class="result-head">
+            <h2>Recent checks</h2>
+            <button type="button" class="btn ghost small" id="clear-history">Clear</button>
+          </div>
+          <p class="tiny muted">Saved only in this browser. Click one to view it again.</p>
+          <ul id="history"></ul>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============ HOW ============ -->
+    <section id="how" class="wrap section">
+      <h2 class="section-title">How it works</h2>
+      <div class="how-grid">
+        <div class="card how"><span class="how-num">1</span><h3>You enter values</h3><p>Age, sex, chest pain, blood pressure and cholesterol are enough. Test results like max heart rate improve accuracy.</p></div>
+        <div class="card how"><span class="how-num">2</span><h3>Spring Boot validates</h3><p>The Java backend checks every value is in a realistic range before anything reaches the model.</p></div>
+        <div class="card how"><span class="how-num">3</span><h3>The model predicts</h3><p>A Python service runs a tuned scikit-learn model. Missing values are filled with typical values learned from the training data.</p></div>
+        <div class="card how"><span class="how-num">4</span><h3>You get an explanation</h3><p>Each input is swapped with a typical value to measure how much it pushed your risk up or down.</p></div>
+      </div>
+      <div class="levels card">
+        <div class="level"><span class="pill LOW">LOW</span> below 33&nbsp;%</div>
+        <div class="level"><span class="pill MEDIUM">MEDIUM</span> 33 – 66&nbsp;%</div>
+        <div class="level"><span class="pill HIGH">HIGH</span> above 66&nbsp;%</div>
+      </div>
+    </section>
+
+    <!-- ============ MODEL ============ -->
+    <section id="model" class="wrap section">
+      <h2 class="section-title">About the model</h2>
+      <div class="model-grid">
+        <div class="card">
+          <h3>Performance on unseen patients</h3>
+          <p class="muted small-text" id="model-summary">Loading model information…</p>
+          <div class="metric-grid" id="metrics"></div>
+          <h3 class="sub">Algorithms compared (5-fold cross-validation)</h3>
+          <ul class="bars" id="cv-bars"></ul>
+        </div>
+        <div class="card">
+          <h3>Which inputs matter most overall</h3>
+          <p class="muted small-text">Permutation importance: how much the model's accuracy drops when a value is shuffled.</p>
+          <ul class="bars" id="importance-bars"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FAQ ============ -->
+    <section id="faq" class="wrap section">
+      <h2 class="section-title">Frequently asked questions</h2>
+      <div class="faq card">
+        <details><summary>Where do I find these values?</summary><p>Blood pressure can be measured at home or a pharmacy. Cholesterol and fasting blood sugar come from a routine blood test. Max heart rate, ST depression, slope, vessels and thalassemia come from an exercise stress test, ECG, fluoroscopy or a thallium scan. If you don't have them, choose <em>Not sure</em>.</p></details>
+        <details><summary>Why does "no chest pain" sometimes increase the risk?</summary><p>The training data came from patients referred to a cardiology clinic. Many of those with confirmed disease had no typical chest pain ("silent" disease), so the model learned this pattern. It reflects that clinic population, not the general public.</p></details>
+        <details><summary>How accurate is it?</summary><p>On patients it never saw during training, the model reaches the ROC-AUC and accuracy shown above. That sounds high, but the dataset is small (303 patients from one US hospital in 1988) and the model was never clinically validated.</p></details>
+        <details><summary>Is my data stored?</summary><p>No. Values are sent to the model to compute the estimate and are not saved on the server. The "Recent checks" list lives only in your own browser and you can clear it anytime.</p></details>
+        <details><summary>Can I use mmol/L for cholesterol?</summary><p>Yes. Use the unit switch next to the cholesterol field. Values are converted to mg/dL (×&nbsp;38.67) before being sent to the model.</p></details>
+      </div>
+    </section>
+  </main>
+
+  <!-- Only visible when printing -->
+  <section class="print-report" id="print-report" aria-hidden="true"></section>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>HeartCheck · Machine learning student project</span>
+      <span class="muted">Not a medical device. Data: UCI Cleveland Heart Disease dataset.</span>
+    </div>
+  </footer>
+
+  <script src="app.js?v=3"></script>
+</body>
+</html>
